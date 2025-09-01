@@ -20,19 +20,19 @@
         packages = pkgs.lib.attrsets.genAttrs [ "x86_64-linux" "aarch64-linux" ] (
           targetSystem:
           let
-            crossPkgs = import nixpkgs {
+            pkgs = import nixpkgs {
               localSystem = system;
               crossSystem = targetSystem;
             };
           in
           rec {
-            script = crossPkgs.writeShellApplication {
+            script = pkgs.writeShellApplication {
               name = "script";
               text = builtins.readFile ./script.sh;
               runtimeInputs = [
-                crossPkgs.coreutils
-                crossPkgs.jsonschema
-                crossPkgs.yq
+                pkgs.coreutils
+                pkgs.jsonschema
+                pkgs.yq
               ];
               runtimeEnv = {
                 "KRM_SCHEMA" = (

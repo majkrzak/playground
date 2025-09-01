@@ -45,11 +45,9 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - run: |
+        set -x
+        podman manifest create ghcr.io/majkrzak/playground:latest
         for artifact in build-*/result; do
-          tag=$(podman load -i $artifact | grep -Go "playground:.*")
-          all_tags="$all_tags ghcr.io/majkrzak/$tag"
-          podman tag $tag ghcr.io/majkrzak/$tag
-          podman push ghcr.io/majkrzak/$tag --format oci
+          podman manifest add ghcr.io/majkrzak/playground:latest docker-archive:$artifact
         done
-        podman manifest create ghcr.io/majkrzak/playground:latest $all_tags
-        podman push ghcr.io/majkrzak/playground:latest
+        podman manifest push --all ghcr.io/majkrzak/playground:latest
