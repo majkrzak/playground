@@ -15,36 +15,43 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
       in
-      {
+      rec {
         formatter = pkgs.nixfmt;
-        packages = rec {
-          default = pkgs.resholve.writeScriptBin "my-script" {
-            inputs = [
-              pkgs.coreutils
-              pkgs.jsonschema
-              pkgs.yq-go
-            ];
-            fix = {
-              "$KRM_SCHEMA" = [
-                (pkgs.writeTextFile {
-                  name = "krm.schema.json";
-                  text = builtins.readFile ./krm.schema.json;
-                })
+        packages = pkgs.lib.attrsets.genAttrs [ "x86_64-linux" "aarch64-linux" ] (
+          targetSystem:
+          let
+            crossPkgs = import nixpkgs {
+              localSystem = system;
+              crossSystem = targetSystem;
+            };
+          in
+          rec {
+            script = crossPkgs.writeShellApplication {
+              name = "script";
+              text = builtins.readFile ./script.sh;
+              runtimeInputs = [
+                crossPkgs.coreutils
+                crossPkgs.jsonschema
+                crossPkgs.yq
               ];
+              runtimeEnv = {
+                "KRM_SCHEMA" = (
+                  pkgs.writeTextFile {
+                    name = "krm.schema.json";
+                    text = builtins.readFile ./krm.schema.json;
+                  }
+                );
+              };
+              inheritPath = false;
             };
-            execer = [
-              "cannot:${pkgs.yq-go}/bin/yq"
-              "cannot:${pkgs.jsonschema}/bin/jv"
-            ];
-            interpreter = "${pkgs.runtimeShell}";
-          } (builtins.readFile ./script.sh);
-          docker = pkgs.dockerTools.buildImage {
-            name = "playground";
-            config = {
-              Cmd = [ "${default}" ];
+            docker = pkgs.dockerTools.buildImage {
+              name = "playground";
+              config = {
+                Cmd = [ "${script}" ];
+              };
             };
-          };
-        };
+          }
+        );
       }
     );
 }
