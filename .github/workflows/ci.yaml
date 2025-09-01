@@ -46,8 +46,8 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     - run: |
         set -x
-        podman manifest create ghcr.io/majkrzak/playground:latest
+        podman manifest create containers-storage:ghcr.io/majkrzak/playground:latest
         for artifact in build-*/result; do
-          podman manifest add ghcr.io/majkrzak/playground:latest docker-archive:$artifact
+          podman manifest add containers-storage:ghcr.io/majkrzak/playground:latest docker-archive:$artifact
         done
-        podman manifest push --all ghcr.io/majkrzak/playground:latest
+        podman manifest push --format=oci --all containers-storage:ghcr.io/majkrzak/playground:latest docker://ghcr.io/majkrzak/playground:latest
