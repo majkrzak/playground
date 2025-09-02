@@ -50,7 +50,7 @@ jobs:
         set -x
         podman manifest create ghcr.io/majkrzak/playground:latest
         for artifact in *-build/result; do
-          tag=$(podman load -i $artifact | grep -Go "localhost/playground:.*")
+          tag=$(podman load --input=$artifact | grep -Go "localhost/playground:.*")
           podman manifest add ghcr.io/majkrzak/playground:latest containers-storage:$tag
         done
-        podman manifest push --all ghcr.io/majkrzak/playground:latest
+        podman manifest push --format=oci --all ghcr.io/majkrzak/playground:latest
