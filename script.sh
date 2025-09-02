@@ -4,4 +4,4 @@ set -e
 
 input=$(</dev/stdin)
 
-<<< "$input" yq . | jv ${KRM_SCHEMA-$(dirname $$0)/krm.schema.json} -
+<<< "$input" yq . -o=json | jv ${KRM_SCHEMA-$(dirname $$0)/krm.schema.json} -

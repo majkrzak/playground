@@ -15,43 +15,34 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
       in
-      rec {
+      {
         formatter = pkgs.nixfmt;
-        packages = pkgs.lib.attrsets.genAttrs [ "x86_64-linux" "aarch64-linux" ] (
-          targetSystem:
-          let
-            pkgs = import nixpkgs {
-              localSystem = system;
-              crossSystem = targetSystem;
-            };
-          in
-          rec {
-            script = pkgs.writeShellApplication {
-              name = "script";
-              text = builtins.readFile ./script.sh;
-              runtimeInputs = [
-                pkgs.coreutils
-                pkgs.jsonschema
-                pkgs.yq
+        packages = rec {
+          default = pkgs.resholve.writeScript "my-script" {
+            inputs = [
+              pkgs.coreutils
+              pkgs.jsonschema
+              pkgs.yq-go
+            ];
+            fix = {
+              "$KRM_SCHEMA" = [
+                (pkgs.writeTextFile {
+                  name = "krm.schema.json";
+                  text = builtins.readFile ./krm.schema.json;
+                })
               ];
-              runtimeEnv = {
-                "KRM_SCHEMA" = (
-                  pkgs.writeTextFile {
-                    name = "krm.schema.json";
-                    text = builtins.readFile ./krm.schema.json;
-                  }
-                );
-              };
-              inheritPath = false;
             };
-            docker = pkgs.dockerTools.buildImage {
-              name = "playground";
-              config = {
-                Cmd = [ "${script}" ];
-              };
-            };
-          }
-        );
+            execer = [
+              "cannot:${pkgs.yq-go}/bin/yq"
+              "cannot:${pkgs.jsonschema}/bin/jv"
+            ];
+            interpreter = "${pkgs.runtimeShell}";
+          } (builtins.readFile ./script.sh);
+          image = pkgs.ociTools.buildContainer {
+            args = [ default ];
+          };
+        };
       }
     );
+
 }
