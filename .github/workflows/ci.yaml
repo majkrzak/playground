@@ -20,8 +20,8 @@ jobs:
         with:
           github_access_token: ${{ github.token }}
       - uses: actions/checkout@v5
-      - name: Build OCI image
-        run: nix build .#image
+      - name: Build Docker Image
+        run: nix build .#docker
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-build
