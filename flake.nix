@@ -38,8 +38,9 @@
             ];
             interpreter = "${pkgs.runtimeShell}";
           } (builtins.readFile ./script.sh);
-          image = pkgs.ociTools.buildContainer {
-            args = [ default ];
+          docker = pkgs.dockerTools.buildLayeredImage {
+            name = "playground";
+            config.Cmd = "${default}";
           };
         };
       }

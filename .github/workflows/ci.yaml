@@ -24,8 +24,8 @@ jobs:
         run: nix build .#image
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}.oci
-          path: result/*
+          name: ${{ matrix.target }}-build
+          path: result
   merge:
     runs-on: ubuntu-latest
     needs:
@@ -33,7 +33,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
-        pattern: "*.oci"
+        pattern: "*-build"
     - name: Log in to ghcr.io
       uses: redhat-actions/podman-login@v1
       with:
@@ -49,7 +49,8 @@ jobs:
     - run: |
         set -x
         podman manifest create ghcr.io/majkrzak/playground:latest
-        for artifact in *.oci; do
-          podman manifest add ghcr.io/majkrzak/playground:latest oci:$artifact
+        for artifact in *-build/result; do
+          tag=$(podman load -i $artifact | grep -Go "localhost/playground:.*")
+          podman manifest add ghcr.io/majkrzak/playground:latest containers-storage:$tag
         done
         podman manifest push --all ghcr.io/majkrzak/playground:latest
