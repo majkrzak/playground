@@ -40,7 +40,7 @@
           } (builtins.readFile ./script.sh);
           docker = pkgs.dockerTools.buildLayeredImage {
             name = "playground";
-            config.Cmd = "${default}";
+            config.Cmd = [default];
           };
         };
       }
