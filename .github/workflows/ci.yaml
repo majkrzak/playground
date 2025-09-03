@@ -15,36 +15,49 @@ jobs:
           os: ubuntu-24.04-arm
     name: Build for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    outputs:
+      ${{ matrix.target }}_result: ${{ steps.save.outputs.result }}
     steps:
+      - name: Cache Nix Store
+        uses: actions/cache@v4
+        with:
+          path: /nix/store/
+          key: nix-store
       - uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ github.token }}
       - uses: actions/checkout@v5
       - name: Build Docker Image
         run: nix build .#docker
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.target }}-build
-          path: result
+      - name: Save result
+        id: save
+        run: echo "result=$(readlink result)" >> $GITHUB_OUTPUT
   merge:
     runs-on: ubuntu-latest
     needs:
     - build
     steps:
-    - uses: actions/download-artifact@v4
+    - name: Cache Nix Store
+      uses: actions/cache@v4
       with:
-        pattern: "*-build"
-    - name: Log in to ghcr.io
-      uses: redhat-actions/podman-login@v1
-      with:
-        username: ${{ github.actor }}
-        password: ${{ github.token }}
-        registry: ghcr.io/${{ github.repository_owner }}
-    - name: Push image ghcr.io
-      run: |
-        podman manifest create ghcr.io/majkrzak/playground:latest
-        for artifact in *-build/result; do
-          tag=$(podman load --input=$artifact | grep -Go "localhost/playground:.*")
-          podman manifest add ghcr.io/majkrzak/playground:latest containers-storage:$tag
-        done
-        podman manifest push --format=oci --all ghcr.io/majkrzak/playground:latest
+        path: /nix/store/
+        key: nix-store
+    - name: Test
+      run: echo ${{ needs.build.outputs }}
+    # - uses: actions/download-artifact@v4
+    #   with:
+    #     pattern: "*-build"
+    # - name: Log in to ghcr.io
+    #   uses: redhat-actions/podman-login@v1
+    #   with:
+    #     username: ${{ github.actor }}
+    #     password: ${{ github.token }}
+    #     registry: ghcr.io/${{ github.repository_owner }}
+    # - name: Push image ghcr.io
+    #   run: |
+    #     podman manifest create ghcr.io/majkrzak/playground:latest
+    #     for artifact in *-build/result; do
+    #       tag=$(podman load --input=$artifact | grep -Go "localhost/playground:.*")
+    #       podman manifest add ghcr.io/majkrzak/playground:latest containers-storage:$tag
+    #     done
+    #     podman manifest push --format=oci --all ghcr.io/majkrzak/playground:latest
