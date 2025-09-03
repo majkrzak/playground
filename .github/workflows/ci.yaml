@@ -16,7 +16,7 @@ jobs:
     name: Build for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     outputs:
-      ${{ matrix.target }}_result: ${{ steps.save.outputs.result }}
+      result: ${{ steps.save.outputs.result }}
     steps:
       - name: Cache Nix Store
         uses: actions/cache@v4
@@ -31,7 +31,7 @@ jobs:
         run: nix build .#docker
       - name: Save result
         id: save
-        run: echo "result=$(readlink result)" >> $GITHUB_OUTPUT
+        run: echo "result_${{ matrix.target }}=$(readlink result)" >> $GITHUB_OUTPUT
   merge:
     runs-on: ubuntu-latest
     needs:
