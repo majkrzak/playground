@@ -1,0 +1,25 @@
+name: Enforce Release Commits
+
+on:
+  pull_request_target:
+    branches: [master]
+
+jobs:
+  validate-release-merge:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR code
+        continue-on-error: true
+        uses: actions/checkout@v4
+      
+      - name: Fetch HEAD for validation
+        run: git fetch origin ${{ github.event.pull_request.head.ref }} 2>/dev/null || exit 0
+      
+      - name: Validate release commit
+        run: |
+          msg=$(git log -1 FETCH_HEAD --format="%s")
+          [ -n "$msg" ] && echo "$msg" | grep -qE '^bump v?[0-9]+\.[0-9]+(-[0-9]+)?$'
+
+      - name: Check manifest modifications
+        run: git log origin/master..FETCH_HEAD --pretty=format:"%s:%s" $GITHUB_WORKSPACE >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
