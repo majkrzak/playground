@@ -1,13 +1,24 @@
-name: Enforce Release Commits
-
+name: Enforce Release Rules
 on:
-  pull_request_target:
+  pull_request:
     branches: [master]
-
 jobs:
   validate-signatures:
+    name: Release must be signed
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
-      - run: git verify-commit ${{ github.sha }}
+      - run: |
+          gpg --batch --trust-model direct --import <(curl -sfL https://majkrzak.dev/majkrzak.asc)
+      - run: |
+          git verify-commit ${{ github.sha }}
+  validate-commit-message:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        run: |
+          version=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].version') >> "$GITHUB_OUTPUT"
+      - run: |
+          [[ "${{ github.event.pull_request.head.commit.message }}" =~ ^Release:\ ${{ steps.version.outputs.version }} ]] || exit 1
+    
